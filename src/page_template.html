@@ -1,0 +1,49 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Toronto Urban Wood Waste: Mulch vs Biochar</title>
+<style>
+:root{--bg:#fafaf7;--fg:#1d2420;--mut:#5c6760;--card:#fff;--bd:#d9ddd6;--acc:#2c7a4b;--bad:#b4472f}
+@media(prefers-color-scheme:dark){:root{--bg:#161a17;--fg:#e8ece6;--mut:#9aa59d;--card:#1f2521;--bd:#333c36;--acc:#5fbf86;--bad:#e0836c}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:20px 16px 48px}h1{font-size:1.5rem;margin:.2em 0}h2{font-size:1.05rem;margin:1.6em 0 .4em}
+p.sub{color:var(--mut);margin:.2em 0 1em}.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px}svg{width:100%;height:auto;display:block}
+.ward{stroke:var(--bg);stroke-width:.8}.site{cursor:pointer;stroke:var(--fg);stroke-width:1.5}.site.sel{stroke-width:4}
+label{display:block;font-size:.82rem;color:var(--mut);margin-top:8px}label b{color:var(--fg);float:right}input[type=range]{width:100%}
+.kpi{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.kpi div{flex:1 1 120px;border:1px solid var(--bd);border-radius:8px;padding:8px}.kpi span{font-size:.75rem;color:var(--mut);display:block}.kpi strong{font-size:1.25rem}
+table{border-collapse:collapse;width:100%;font-size:.85rem}td,th{padding:4px 6px;border-bottom:1px solid var(--bd);text-align:right}th:first-child,td:first-child{text-align:left}
+.warn{border-left:4px solid var(--bad);padding:4px 10px;color:var(--mut);font-size:.88rem}small{color:var(--mut)}
+</style></head><body><main>
+<h1>Toronto urban wood waste: mulch vs biochar</h1>
+<p class="sub">Spatial life-cycle and techno-economic model by Yiduo Zhou. Python, SQL (DuckDB), GeoPandas, NetworkX, SciPy, SALib. Aggregated, ward-level results only.</p>
+<div class="warn">Economics here are <b>illustrative</b>: capex, opex and biochar price are literature-style ranges, not quotes. Supply is a modelled index validated against 311 requests (leave-one-out R² 0.65), not measured tonnage.</div>
+<div class="grid"><div class="card"><svg id="map" viewBox="0 0 900 670" role="img" aria-label="Map of Toronto wards by wood-waste supply share and transfer stations"></svg>
+<small>Ward colour = share of citywide street-tree basal area (wood-waste supply proxy). Circles = transfer stations (candidate biochar sites); click one. Station colour = mean haul km to that site.</small></div>
+<div class="card"><b id="selname"></b><div class="kpi"><div><span>Mean haul to site</span><strong id="k1"></strong></div><div><span>Break-even carbon price</span><strong id="k2"></strong></div><div><span>Margin at chosen carbon price</span><strong id="k3"></strong></div></div><div id="ctl"></div>
+<label><input type="checkbox" id="contract"> Count the full City haul contract fee as avoided (upper bound)</label></div></div>
+<h2>Candidate sites ranked by mean haul distance</h2><div class="card"><table id="tbl"></table></div>
+<h2>What the model corrected from my first report (v1 → v2)</h2><div class="card"><table>
+<tr><th>Item</th><th>v1</th><th>v2 (this work)</th></tr><tr><td>Long-haul trips</td><td>325 (25 t/truck)</td><td>~677 (75 m³ trailer; 534–846)</td></tr>
+<tr><td>Long-haul transport CO₂</td><td>44.8 t</td><td>79.8 t (one-way km; P5–P95 61–102)</td></tr><tr><td>Bulk density</td><td>0.16 t/m³</td><td>0.16–0.20 t/m³ (sheet note says 0.20)</td></tr>
+<tr><td>8,122 t cohort</td><td>treated as one batch</td><td>30 records across 2022–2025</td></tr></table>
+<p><small>Biochar still beats mulch on climate: transport is about 2 % of the 4,061 tCO₂e benefit. Sobol: fuel economy and trailer capacity dominate once one-way distance is confirmed.</small></p></div>
+<h2>Limits, stated plainly</h2><div class="card"><small>The nearest-station assumption failed validation against 2023 weigh-scale data (Spearman −0.43, n = 6), so this tool does <b>not</b> claim savings from re-routing existing flows; it ranks <b>siting</b> options only. Speeds are assumed by road class (no city-wide traffic data). Siting barely changes the break-even price (about $58–66 per tCO₂e across stations); capex, opex and biochar price matter far more. Mulch decomposition emissions are set to zero. Moisture basis for the sequestration credit is a key v1 correction (credit applied per dry tonne). Data: City of Toronto Open Data (wards, street trees, 311, Centreline, transfer stations, green spaces) and City staff weigh-scale/haul records, aggregated with permission.</small></div>
+</main><script>
+const D=__DATA__;const $=id=>document.getElementById(id);
+const P={carbon:{l:"Carbon price ($/tCO₂e)",v:65,a:0,b:300,s:5},price:{l:"Biochar price ($/t)",v:300,a:50,b:800,s:10},capex:{l:"Capex ($ per t/yr capacity)",v:450,a:150,b:1000,s:10},opex:{l:"Opex ($/t feedstock)",v:40,a:20,b:90,s:1},yld:{l:"Biochar yield (% of dry mass)",v:25,a:15,b:35,s:1},moist:{l:"Feedstock moisture (%)",v:45,a:30,b:55,s:1},ctkm:{l:"Haul cost ($/t-km)",v:0.2,a:0.05,b:0.5,s:0.01},Q:{l:"Feedstock (t/yr)",v:14400,a:3000,b:20000,s:100}};
+const SEQ=0.6,PROC=0.1,CONTRACT=16.7/0.17;let sel=0;
+Object.entries(P).forEach(([k,o])=>{const e=document.createElement("label");e.innerHTML=o.l+' <b id="v_'+k+'"></b><input type="range" id="r_'+k+'" min="'+o.a+'" max="'+o.b+'" step="'+o.s+'" value="'+o.v+'">';$("ctl").appendChild(e);$("r_"+k).oninput=()=>{P[k].v=+$("r_"+k).value;draw()}});
+$("contract").onchange=draw;
+const meanKm=j=>D.wards.reduce((s,w)=>s+w.share*w.km[j],0);
+function econ(d){const dry=1-P.moist.v/100,q=P;const avoided=$("contract").checked?CONTRACT:q.ctkm.v*D.DBAU;
+ const inc=q.capex.v*D.CRF+q.opex.v+q.ctkm.v*d-dry*(q.yld.v/100)*q.price.v-avoided;const co2=dry*(SEQ-PROC)+D.EF*(D.DBAU-d)/1000;
+ return{inc,co2,be:Math.max(inc,0)/co2,margin:q.carbon.v*co2-inc}}
+const f0=x=>Math.round(x).toLocaleString(),$$=x=>(x<0?"−$":"$")+f0(Math.abs(x));
+const mx=Math.max(...D.wards.map(w=>w.share));
+$("map").innerHTML=D.wards.map(w=>'<path class="ward" d="'+w.d+'" fill="rgba(44,122,75,'+(0.1+0.85*w.share/mx).toFixed(2)+')"><title>'+w.name+": "+(w.share*100).toFixed(1)+"% of supply</title></path>").join("")+D.sites.map((s,i)=>'<circle class="site" id="s'+i+'" cx="'+s.x+'" cy="'+s.y+'" r="11"><title>'+s.name+'</title></circle><text x="'+(s.x+14)+'" y="'+(s.y+4)+'" font-size="12" fill="currentColor">'+s.name+"</text>").join("");
+D.sites.forEach((s,i)=>$("s"+i).onclick=()=>{sel=i;draw()});
+function draw(){Object.keys(P).forEach(k=>$("v_"+k).textContent=P[k].v);const km=D.sites.map((_,j)=>meanKm(j)),lo=Math.min(...km),hi=Math.max(...km);
+ D.sites.forEach((s,i)=>{const t=(km[i]-lo)/(hi-lo||1);$("s"+i).setAttribute("fill","rgb("+Math.round(44+t*140)+","+Math.round(160-t*90)+",90)");$("s"+i).classList.toggle("sel",i===sel)});
+ const e=econ(km[sel]);$("selname").textContent="Site: "+D.sites[sel].name;$("k1").textContent=km[sel].toFixed(1)+" km";$("k2").textContent=e.inc<=0?"$0 (cheaper)":$$(e.be);$("k3").innerHTML=$$(e.margin)+"/t<br><small>"+$$(e.margin*P.Q.v)+"/yr</small>";
+ const rows=km.map((k,j)=>[j,k]).sort((a,b)=>a[1]-b[1]);$("tbl").innerHTML="<tr><th>Site</th><th>Mean haul (km)</th><th>Break-even ($/tCO₂e)</th><th>Observed 2023 share</th></tr>"+rows.map(([j,k])=>{const x=econ(k);return"<tr><td>"+D.sites[j].name+"</td><td>"+k.toFixed(1)+"</td><td>"+(x.inc<=0?"0":f0(x.be))+"</td><td>"+(D.sites[j].obs==null?"n/a":(D.sites[j].obs*100).toFixed(0)+"%")+"</td></tr>"}).join("")}
+draw();
+</script></body></html>

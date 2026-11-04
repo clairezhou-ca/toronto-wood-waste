@@ -1,0 +1,13 @@
+geopandas
+pyogrio
+shapely
+pandas
+numpy
+scipy
+networkx
+duckdb
+SALib
+matplotlib
+pyarrow
+openpyxl
+xlrd
