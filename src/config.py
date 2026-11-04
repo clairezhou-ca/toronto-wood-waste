@@ -45,7 +45,8 @@ FULL_YEARS = [2024, 2025]
 
 # ======================= PHASE 2: techno-economic assumptions (ILLUSTRATIVE -- replace with facility quotes) ==========
 D_BAU_KM = 120.0                    # one-way yard -> mulch processor (Dlong, confirmed one-way by analyst)
-EF_TKM = 9.8 / 120.0 / 1.0          # kg CO2 per tonne-km (v2 one-way: 9.8 kg/t over 120 km)
+RETURN_FACTOR = 1.75                # Dlong is ONE-WAY (confirmed): truck km = one-way x (1 + empty-return fuel ratio ~0.75) -- ASSUMPTION
+EF_TKM = 9.8 * RETURN_FACTOR / 120.0   # kg CO2 per loaded tonne-km incl. empty return
 Q_TOTAL_T = 14_400                  # t/yr: staff estimate 90,000 m3/yr x 0.16 t/m3 (lower observed haul stream ~3,250 t in 2023)
 MOISTURE = (0.35, 0.45, 0.50); YIELD = (0.20, 0.25, 0.30)          # triangular (min, mode, max)
 SEQ_PER_DRY_T = (0.45, 0.60, 0.70); PROC_PER_DRY_T = (0.05, 0.10, 0.15)   # tCO2e per DRY tonne (v1 used 0.6/0.1 with no moisture basis)

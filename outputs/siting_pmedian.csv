@@ -1,4 +1,4 @@
 plants,sites,capacity_t_yr_each,mean_haul_km,incr_cost_per_t,net_tco2e_per_t,breakeven_carbon_price
-1,Ingram,14544,13.0,16.6,0.284,58.4
-2,Bermondsey+Ingram,8640,9.4,15.9,0.284,55.9
-3,Commissioners+Ingram+Victoria Park,5760,9.0,15.8,0.284,55.5
+1,Ingram,14544,13.0,16.6,0.29,57.1
+2,Bermondsey+Ingram,8640,9.4,15.9,0.291,54.6
+3,Commissioners+Ingram+Victoria Park,5760,9.0,15.8,0.291,54.2
